@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { X, Check, Zap, Sparkles, Shield, CreditCard, ArrowRight } from 'lucide-react';
-import { createCheckout, activateProPlan } from '../services/api';
+import { X, Check, Zap, Sparkles, Shield, CreditCard, ArrowRight, Lock } from 'lucide-react';
+import { createCheckout } from '../services/api';
 
 export default function PricingModal({ onClose, onUnlockSuccess }) {
-  const [billingCycle, setBillingCycle] = useState('monthly');
   const [loadingPlan, setLoadingPlan] = useState(null);
 
   const handleCheckout = async (planId) => {
@@ -11,31 +10,16 @@ export default function PricingModal({ onClose, onUnlockSuccess }) {
       setLoadingPlan(planId);
       const res = await createCheckout(planId);
       
-      if (res.url) {
-        // If test mode or live mode url is returned
-        if (res.isDemo) {
-          activateProPlan();
-          onUnlockSuccess();
-          onClose();
-        } else {
-          window.location.href = res.url;
-        }
+      if (res && res.url) {
+        // Redirect directly to Stripe Checkout
+        window.location.href = res.url;
       }
     } catch (err) {
-      console.error('Checkout error:', err);
-      // Fallback local unlock for immediate demo
-      activateProPlan();
-      onUnlockSuccess();
-      onClose();
+      console.error('Checkout redirect error:', err);
+      alert('Could not initialize Stripe checkout. Please try again in a few moments.');
     } finally {
       setLoadingPlan(null);
     }
-  };
-
-  const handleSimulateInstantUnlock = () => {
-    activateProPlan();
-    onUnlockSuccess();
-    onClose();
   };
 
   return (
@@ -53,8 +37,8 @@ export default function PricingModal({ onClose, onUnlockSuccess }) {
         {/* Title */}
         <div className="text-center max-w-xl mx-auto mb-8">
           <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-300 text-xs font-semibold mb-3">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Monetization & Access Plans</span>
+            <Lock className="w-3.5 h-3.5" />
+            <span>Secure 256-Bit Encrypted Checkout</span>
           </div>
           <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight mb-2">
             Unlock Full Contract Protection
@@ -65,7 +49,7 @@ export default function PricingModal({ onClose, onUnlockSuccess }) {
         </div>
 
         {/* Pricing Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
           
           {/* Card 1: Single Scan Pass */}
           <div className="glass-card rounded-2xl p-6 border border-slate-800 flex flex-col justify-between hover:border-slate-700 transition-all">
@@ -107,7 +91,7 @@ export default function PricingModal({ onClose, onUnlockSuccess }) {
               className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-colors flex items-center justify-center space-x-1.5"
             >
               <CreditCard className="w-3.5 h-3.5" />
-              <span>{loadingPlan === 'single-scan' ? 'Processing...' : 'Buy Single Pass ($4.99)'}</span>
+              <span>{loadingPlan === 'single-scan' ? 'Redirecting to Stripe...' : 'Pay $4.99 (Stripe Checkout)'}</span>
             </button>
           </div>
 
@@ -159,7 +143,7 @@ export default function PricingModal({ onClose, onUnlockSuccess }) {
               className="w-full py-3 px-4 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-brand-500 to-blue-600 hover:from-brand-400 hover:to-blue-500 shadow-lg shadow-brand-500/25 transition-all transform hover:-translate-y-0.5 flex items-center justify-center space-x-1.5"
             >
               <Zap className="w-3.5 h-3.5" />
-              <span>{loadingPlan === 'monthly-pro' ? 'Redirecting to Stripe...' : 'Start Unlimited Pro ($19/mo)'}</span>
+              <span>{loadingPlan === 'monthly-pro' ? 'Redirecting to Stripe...' : 'Subscribe $19/mo (Stripe)'}</span>
             </button>
           </div>
 
@@ -203,23 +187,16 @@ export default function PricingModal({ onClose, onUnlockSuccess }) {
               className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-colors flex items-center justify-center space-x-1.5"
             >
               <Shield className="w-3.5 h-3.5" />
-              <span>{loadingPlan === 'annual-pro' ? 'Processing...' : 'Get Annual Pro ($149/yr)'}</span>
+              <span>{loadingPlan === 'annual-pro' ? 'Redirecting to Stripe...' : 'Pay $149/yr (Stripe)'}</span>
             </button>
           </div>
 
         </div>
 
-        {/* Demo Simulation Bar */}
-        <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
-          <div>
-            <strong className="text-slate-200">Testing & Demonstration Mode:</strong> Click below to simulate an immediate successful subscription unlock without entering credit card details.
-          </div>
-          <button
-            onClick={handleSimulateInstantUnlock}
-            className="px-3.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 font-bold border border-emerald-500/30 whitespace-nowrap transition-colors"
-          >
-            ⚡ Simulate Instant Pro Unlock
-          </button>
+        {/* Security & Guarantees */}
+        <div className="text-center text-xs text-slate-400 flex items-center justify-center space-x-2">
+          <Shield className="w-4 h-4 text-brand-400" />
+          <span>Payments processed securely by Stripe. Cancel anytime in 1 click.</span>
         </div>
 
       </div>
