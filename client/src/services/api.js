@@ -1,45 +1,67 @@
+import { analyzeContractLocally } from './localAnalyzer';
+
 const API_BASE = '/api';
 
 /**
- * Analyzes raw pasted contract text
+ * Analyzes raw pasted contract text (with automatic client-side fallback)
  */
 export async function analyzeContractText(text, documentTitle = 'Custom Pasted Agreement') {
-  const response = await fetch(`${API_BASE}/analyze/text`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ text, documentTitle }),
-  });
+  try {
+    const response = await fetch(`${API_BASE}/analyze/text`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ text, documentTitle }),
+    });
 
-  if (!response.ok) {
-    const errData = await response.json().catch(() => ({}));
-    throw new Error(errData.error || `Server responded with status ${response.status}`);
+    if (response.ok) {
+      const result = await response.json();
+      return result.data;
+    }
+  } catch (networkErr) {
+    console.warn('[ClauseGuard] Remote API unreachable, utilizing client-side analysis engine:', networkErr.message);
   }
 
-  const result = await response.json();
-  return result.data;
+  // Graceful client-side fallback
+  return analyzeContractLocally(text, documentTitle);
 }
 
 /**
- * Analyzes uploaded file (PDF, DOCX, TXT)
+ * Analyzes uploaded file (PDF, DOCX, TXT) with client-side text fallback
  */
 export async function analyzeContractFile(file) {
-  const formData = new FormData();
-  formData.append('document', file);
+  try {
+    const formData = new FormData();
+    formData.append('document', file);
 
-  const response = await fetch(`${API_BASE}/analyze/file`, {
-    method: 'POST',
-    body: formData,
-  });
+    const response = await fetch(`${API_BASE}/analyze/file`, {
+      method: 'POST',
+      body: formData,
+    });
 
-  if (!response.ok) {
-    const errData = await response.json().catch(() => ({}));
-    throw new Error(errData.error || `Server responded with status ${response.status}`);
+    if (response.ok) {
+      const result = await response.json();
+      return result.data;
+    }
+  } catch (networkErr) {
+    console.warn('[ClauseGuard] Remote file parser unreachable, attempting client-side extraction:', networkErr.message);
   }
 
-  const result = await response.json();
-  return result.data;
+  // Fallback: If it's a text/markdown file, read directly in browser
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target.result;
+      if (text && typeof text === 'string' && text.trim().length > 20) {
+        resolve(analyzeContractLocally(text, file.name));
+      } else {
+        reject(new Error('Document is in binary format. For advanced PDF/Word parsing without a server, paste the text directly into the "Paste Text" tab.'));
+      }
+    };
+    reader.onerror = () => reject(new Error('Failed to read document in browser.'));
+    reader.readAsText(file);
+  });
 }
 
 /**

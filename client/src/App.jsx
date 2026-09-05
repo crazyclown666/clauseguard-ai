@@ -170,6 +170,14 @@ export default function App() {
     window.print();
   };
 
+  const handleShareOnX = () => {
+    const score = analysis?.overallScore || 0;
+    const docName = analysis?.documentTitle || analysis?.documentType || 'my contract';
+    const tweetText = `Just audited ${docName} using ClauseGuard AI! 🛡️\nSafety Score: ${score}/100 with ${highRiskCount} critical red flag${highRiskCount === 1 ? '' : 's'}.\n\nAudit your contracts before signing: https://crazyclown666.github.io/clauseguard-ai/`;
+    const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+    window.open(shareUrl, '_blank', 'noopener,noreferrer');
+  };
+
   // Filter clauses
   const filteredClauses = analysis?.clauses ? analysis.clauses.filter(c => {
     if (filterSeverity === 'all') return true;
@@ -272,18 +280,26 @@ export default function App() {
               {/* Action Buttons */}
               <div className="flex items-center space-x-2.5">
                 <button
+                  onClick={handleShareOnX}
+                  className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 transition-colors"
+                  title="Share your audit score on X (Twitter)"
+                >
+                  <Share2 className="w-3.5 h-3.5 text-sky-400" />
+                  <span className="hidden sm:inline">Share Audit</span>
+                </button>
+                <button
                   onClick={handlePrint}
                   className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors"
                 >
                   <Printer className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Print / Save PDF Report</span>
+                  <span>Print / PDF</span>
                 </button>
                 <button
                   onClick={() => setShowPricing(true)}
                   className="flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-brand-500 hover:bg-brand-400 text-white transition-colors shadow-md shadow-brand-500/20"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>Unlock Full Pro Report</span>
+                  <span>Unlock Pro</span>
                 </button>
               </div>
             </div>
